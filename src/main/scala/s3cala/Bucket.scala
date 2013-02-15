@@ -2,6 +2,7 @@ package com.roundeights.s3cala
 
 import com.amazonaws.services.s3.transfer.TransferManager
 import com.amazonaws.services.s3.model.{ProgressListener, ProgressEvent}
+import com.amazonaws.AmazonServiceException
 
 import java.io.{InputStream, File, FileInputStream}
 
@@ -19,21 +20,32 @@ class Bucket (
     def get ( key: String, file: File ): Future[Unit] = {
         val result = Promise[Unit]
 
-        val upload = client.download( bucket, key, file )
+        try {
+            val upload = client.download( bucket, key, file )
 
-        upload.addProgressListener(new ProgressListener {
-            override def progressChanged ( event: ProgressEvent ): Unit = {
-                event.getEventCode match {
-                    case ProgressEvent.FAILED_EVENT_CODE
-                        => result.failure( upload.waitForException )
-                    case ProgressEvent.CANCELED_EVENT_CODE
-                        => result.failure( new Exception )
-                    case ProgressEvent.COMPLETED_EVENT_CODE
-                        => result.success( Unit )
-                    case _ => ()
+            upload.addProgressListener(new ProgressListener {
+                override def progressChanged ( event: ProgressEvent ): Unit = {
+                    event.getEventCode match {
+                        case ProgressEvent.FAILED_EVENT_CODE
+                            => result.failure(
+                                new S3Failed(upload.waitForException)
+                            )
+                        case ProgressEvent.CANCELED_EVENT_CODE
+                            => result.failure(
+                                new S3Failed("Request Cancelled")
+                            )
+                        case ProgressEvent.COMPLETED_EVENT_CODE
+                            => result.success( Unit )
+                        case _
+                            => ()
+                    }
                 }
-            }
-        })
+            })
+        } catch {
+            case err: AmazonServiceException if err.getStatusCode == 404
+                => result.failure( new S3NotFound(bucket, key) )
+            case err: Throwable => result.failure( new S3Failed(err) )
+        }
 
         result.future
     }
