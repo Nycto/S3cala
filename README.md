@@ -50,7 +50,7 @@ object Main extends App {
     future.onSuccess {
         case stream: InputStream => {
             // Do work with your input stream...
-            
+
             client.close
         }
     }
@@ -64,3 +64,11 @@ object Main extends App {
 
 }
 ```
+
+License
+-------
+
+S3cala is released under the MIT License, which is pretty spiffy. You should
+have received a copy of the MIT License along with this program. If not, see
+<http://www.opensource.org/licenses/mit-license.php>.
+
