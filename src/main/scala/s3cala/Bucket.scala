@@ -1,12 +1,33 @@
 package com.roundeights.s3cala
 
-import com.amazonaws.services.s3.transfer.TransferManager
+import com.amazonaws.services.s3.transfer.{TransferManager, Transfer}
 import com.amazonaws.services.s3.model.{ProgressListener, ProgressEvent}
 import com.amazonaws.AmazonServiceException
 
 import java.io.{InputStream, File, FileInputStream}
 
 import scala.concurrent.{Promise, Future, ExecutionContext}
+
+
+/** An asynchronous S3 progress listener, per the AWS api */
+private[s3cala] class Listener (
+    private val result: Promise[Unit],
+    private val transfer: Transfer
+) extends ProgressListener {
+
+    /** {@inheritDoc} */
+    override def progressChanged ( event: ProgressEvent ): Unit = {
+        event.getEventCode match {
+            case ProgressEvent.FAILED_EVENT_CODE
+                => result.failure( new S3Failed(transfer.waitForException) )
+            case ProgressEvent.CANCELED_EVENT_CODE
+                => result.failure( new S3Failed("Request Cancelled") )
+            case ProgressEvent.COMPLETED_EVENT_CODE => result.success( Unit )
+            case _ => ()
+        }
+    }
+}
+
 
 /**
  * A specific S3 bucket
@@ -21,26 +42,8 @@ class Bucket (
         val result = Promise[Unit]
 
         try {
-            val upload = client.download( bucket, key, file )
-
-            upload.addProgressListener(new ProgressListener {
-                override def progressChanged ( event: ProgressEvent ): Unit = {
-                    event.getEventCode match {
-                        case ProgressEvent.FAILED_EVENT_CODE
-                            => result.failure(
-                                new S3Failed(upload.waitForException)
-                            )
-                        case ProgressEvent.CANCELED_EVENT_CODE
-                            => result.failure(
-                                new S3Failed("Request Cancelled")
-                            )
-                        case ProgressEvent.COMPLETED_EVENT_CODE
-                            => result.success( Unit )
-                        case _
-                            => ()
-                    }
-                }
-            })
+            val download = client.download( bucket, key, file )
+            download.addProgressListener( new Listener(result, download) )
         } catch {
             case err: AmazonServiceException if err.getStatusCode == 404
                 => result.failure( new S3NotFound(bucket, key) )
