@@ -2,9 +2,10 @@ package com.roundeights.s3cala
 
 import com.amazonaws.services.s3.transfer.{TransferManager, Transfer}
 import com.amazonaws.services.s3.model.{ProgressListener, ProgressEvent}
+import com.amazonaws.services.s3.model.ObjectMetadata
 import com.amazonaws.AmazonServiceException
 
-import java.io.{InputStream, File, FileInputStream}
+import java.io.{InputStream, File, FileInputStream, ByteArrayInputStream}
 
 import scala.concurrent.{Promise, Future, ExecutionContext}
 
@@ -65,6 +66,25 @@ class Bucket (
         val file = File.createTempFile("S3-",".tmp")
         get( key, file ).map( _ => new FileInputStream(file) )
     }
+
+    /** Uploads a file into a key */
+    def put ( key: String, file: File ): Future[Unit]
+        = transfer( key, client.upload( bucket, key, file ) )
+
+    /** Uploads an input stream into a key */
+    def put ( key: String, stream: InputStream ): Future[Unit] = {
+        transfer( key, client.upload(
+            bucket, key, stream, new ObjectMetadata
+        ) )
+    }
+
+    /** Uploads a Byte Array into a key */
+    def put ( key: String, bytes: Array[Byte] ): Future[Unit]
+        = put( key, new ByteArrayInputStream( bytes ) )
+
+    /** Uploads a String into a key */
+    def put ( key: String, str: String ): Future[Unit]
+        = put( key, str.getBytes("UTF8") )
 
 }
 
