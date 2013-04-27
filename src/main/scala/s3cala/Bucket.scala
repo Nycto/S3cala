@@ -37,13 +37,13 @@ class Bucket (
     val bucket: String
 ) {
 
-    /** Downloads a key into a file */
-    def get ( key: String, file: File ): Future[Unit] = {
+    /** Executes a transfer */
+    private def transfer ( key: String, body: => Transfer ): Future[Unit] = {
         val result = Promise[Unit]
 
         try {
-            val download = client.download( bucket, key, file )
-            download.addProgressListener( new Listener(result, download) )
+            val transfer = body
+            transfer.addProgressListener( new Listener(result, transfer) )
         } catch {
             case err: AmazonServiceException if err.getStatusCode == 404
                 => result.failure( new S3NotFound(bucket, key) )
@@ -52,6 +52,10 @@ class Bucket (
 
         result.future
     }
+
+    /** Downloads a key into a file */
+    def get ( key: String, file: File ): Future[Unit]
+        = transfer( key, client.download( bucket, key, file ) )
 
     /** Downloads a key */
     def get
