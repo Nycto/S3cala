@@ -18,13 +18,18 @@ private[s3cala] class Listener (
 
     /** {@inheritDoc} */
     override def progressChanged ( event: ProgressEvent ): Unit = {
-        event.getEventCode match {
-            case ProgressEvent.FAILED_EVENT_CODE
-                => result.failure( new S3Failed(transfer.waitForException) )
-            case ProgressEvent.CANCELED_EVENT_CODE
-                => result.failure( new S3Failed("Request Cancelled") )
-            case ProgressEvent.COMPLETED_EVENT_CODE => result.success( Unit )
-            case _ => ()
+        if ( !result.isCompleted ) {
+            event.getEventCode match {
+                case ProgressEvent.COMPLETED_EVENT_CODE => result.success( () )
+                case ProgressEvent.CANCELED_EVENT_CODE
+                    => result.failure( new S3Failed("Request Cancelled") )
+                case ProgressEvent.FAILED_EVENT_CODE => {
+                    // transfer.waitForException appears to block forever in
+                    // some cases, so we just fail with a generic message
+                    result.failure( new S3Failed("Request Failed") )
+                }
+                case _ => ()
+            }
         }
     }
 }
