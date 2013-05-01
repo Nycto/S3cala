@@ -11,6 +11,6 @@ scalacOptions ++= Seq("-deprecation", "-feature")
 
 // Application dependencies
 libraryDependencies ++= Seq(
-    "com.amazonaws" % "aws-java-sdk" % "1.3.30"
+    "com.amazonaws" % "aws-java-sdk" % "1.4.1"
 )
 
