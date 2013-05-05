@@ -5,9 +5,26 @@ import com.amazonaws.services.s3.model.{ProgressListener, ProgressEvent}
 import com.amazonaws.services.s3.model.ObjectMetadata
 import com.amazonaws.AmazonServiceException
 
-import java.io.{InputStream, File, FileInputStream, ByteArrayInputStream}
+import java.io.{InputStream, File, FileInputStream}
 
 import scala.concurrent.{Promise, Future, ExecutionContext}
+
+
+/**
+ * S3 Client wrapper
+ */
+class LiveS3 (
+    private val client: TransferManager,
+    private val context: ExecutionContext
+) extends S3 {
+
+    /** {@inheritDoc} */
+    override def bucket ( bucket: String )
+        = new LiveBucket( client, bucket, context )
+
+    /** {@inheritDoc} */
+    override def close: Unit = client.shutdownNow
+}
 
 
 /** An asynchronous S3 progress listener, per the AWS api */
@@ -38,10 +55,11 @@ private[s3cala] class Listener (
 /**
  * A specific S3 bucket
  */
-class Bucket (
+class LiveBucket (
     private val client: TransferManager,
-    val bucket: String
-) {
+    private val bucket: String,
+    implicit private val context: ExecutionContext
+) extends Bucket {
 
     /** Executes a transfer */
     private def transfer ( key: String, body: => Transfer ): Future[Unit] = {
@@ -59,37 +77,26 @@ class Bucket (
         result.future
     }
 
-    /** Downloads a key into a file */
-    def get ( key: String, file: File ): Future[Unit]
+    /** {@inheritDoc} */
+    override def get ( key: String, file: File ): Future[Unit]
         = transfer( key, client.download( bucket, key, file ) )
 
-    /** Downloads a key */
-    def get
-        ( key: String )
-        ( implicit context: ExecutionContext )
-    : Future[InputStream] = {
+    /** {@inheritDoc} */
+    override def get ( key: String ): Future[InputStream] = {
         val file = File.createTempFile("S3-",".tmp")
         get( key, file ).map( _ => new FileInputStream(file) )
     }
 
-    /** Uploads a file into a key */
-    def put ( key: String, file: File ): Future[Unit]
+    /** {@inheritDoc} */
+    override def put ( key: String, file: File ): Future[Unit]
         = transfer( key, client.upload( bucket, key, file ) )
 
-    /** Uploads an input stream into a key */
-    def put ( key: String, stream: InputStream ): Future[Unit] = {
+    /** {@inheritDoc} */
+    override def put ( key: String, stream: InputStream ): Future[Unit] = {
         transfer( key, client.upload(
             bucket, key, stream, new ObjectMetadata
         ) )
     }
-
-    /** Uploads a Byte Array into a key */
-    def put ( key: String, bytes: Array[Byte] ): Future[Unit]
-        = put( key, new ByteArrayInputStream( bytes ) )
-
-    /** Uploads a String into a key */
-    def put ( key: String, str: String ): Future[Unit]
-        = put( key, str.getBytes("UTF8") )
 
 }
 
