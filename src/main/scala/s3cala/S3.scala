@@ -28,6 +28,12 @@ object S3 {
         ( implicit context: ExecutionContext )
     : S3 = apply( new BasicAWSCredentials( accessKey, secretKey ) )
 
+    /** Generates a local S3 interface using the given directory */
+    def local ( root: File )( implicit context: ExecutionContext )
+        = new LocalS3( root, context )
+
+    /** Generates a temporary local S3 interface */
+    def temp ( implicit context: ExecutionContext ) = new LocalS3( context )
 }
 
 /**
