@@ -1,8 +1,8 @@
 package com.roundeights.s3cala
 
 import com.amazonaws.services.s3.transfer.{TransferManager, Transfer}
-import com.amazonaws.services.s3.model.{ProgressListener, ProgressEvent}
 import com.amazonaws.services.s3.model.ObjectMetadata
+import com.amazonaws.event.{ProgressListener, ProgressEvent}
 import com.amazonaws.AmazonServiceException
 
 import java.io.{InputStream, File, FileInputStream}
@@ -40,11 +40,8 @@ private[s3cala] class Listener (
                 case ProgressEvent.COMPLETED_EVENT_CODE => result.success( () )
                 case ProgressEvent.CANCELED_EVENT_CODE
                     => result.failure( new S3Failed("Request Cancelled") )
-                case ProgressEvent.FAILED_EVENT_CODE => {
-                    // transfer.waitForException appears to block forever in
-                    // some cases, so we just fail with a generic message
-                    result.failure( new S3Failed("Request Failed") )
-                }
+                case ProgressEvent.FAILED_EVENT_CODE
+                    => result.failure( transfer.waitForException )
                 case _ => ()
             }
         }
