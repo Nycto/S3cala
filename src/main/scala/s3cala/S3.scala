@@ -14,13 +14,17 @@ object S3 {
     def apply
         ( client: TransferManager )
         ( implicit context: ExecutionContext )
-    : S3 = new LiveS3( client, context )
+    : S3 = new LiveS3( client.toString, client, context )
 
     /** Builds an instance from a set of AWS credentials */
     def apply
         ( credentials: AWSCredentials )
         ( implicit context: ExecutionContext )
-    : S3 = apply( new TransferManager(credentials) )
+    : S3 = new LiveS3(
+        credentials.getAWSAccessKeyId,
+        new TransferManager(credentials),
+        context
+    )
 
     /** Builds an instance from an Access key and a Secret Key */
     def apply

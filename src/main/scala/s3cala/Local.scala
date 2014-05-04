@@ -45,6 +45,9 @@ class LocalS3 (
 
     /** {@inheritDoc} */
     override def close: Unit = ()
+
+    /** {@inheritDoc} */
+    override def toString = "LocalS3(%s)".format(root)
 }
 
 
@@ -56,6 +59,9 @@ class LocalBucket (
     private val dir: File,
     implicit private val context: ExecutionContext
 ) extends Bucket {
+
+    /** {@inheritDoc} */
+    override def toString = "LocalS3Bucket(%s)".format(bucket)
 
     /** Generates a file from a key */
     private def find ( key: String ) = new File( dir, key )

@@ -14,6 +14,7 @@ import scala.concurrent.{Promise, Future, ExecutionContext}
  * S3 Client wrapper
  */
 class LiveS3 (
+    private val id: String,
     private val client: TransferManager,
     private val context: ExecutionContext
 ) extends S3 {
@@ -24,6 +25,9 @@ class LiveS3 (
 
     /** {@inheritDoc} */
     override def close: Unit = client.shutdownNow
+
+    /** {@inheritDoc} */
+    override def toString = "S3(%s)".format(id)
 }
 
 
@@ -57,6 +61,9 @@ class LiveBucket (
     private val bucket: String,
     implicit private val context: ExecutionContext
 ) extends Bucket {
+
+    /** {@inheritDoc} */
+    override def toString = "S3Bucket(%s)".format(bucket)
 
     /** Executes a transfer */
     private def transfer ( key: String, body: => Transfer ): Future[Unit] = {
