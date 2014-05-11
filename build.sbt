@@ -16,6 +16,6 @@ credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
 // Application dependencies
 libraryDependencies ++= Seq(
     "commons-io" % "commons-io" % "2.4" % "optional",
-    "com.amazonaws" % "aws-java-sdk" % "1.6.3"
+    "com.amazonaws" % "aws-java-sdk" % "1.7.8.1"
 )
 
