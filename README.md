@@ -3,28 +3,10 @@ S3cala [![Build Status](https://secure.travis-ci.org/Nycto/S3cala.png?branch=mas
 
 A non-block S3 client for Scala
 
-Adding it to your Project
--------------------------
+Usage
+-----
 
-S3cala is not currently hosted in any publicly available maven repositories.
-However, you can still add it to your project by publishing it to your local
-repository.
-
-Run the following commands:
-
-```
-git clone https://github.com/Nycto/S3cala.git /tmp/S3cala;
-cd /tmp/S3cala;
-sbt publish-local;
-```
-
-Then, just add this to your `build.sbt` file and recompile:
-
-```
-libraryDependencies ++= Seq(
-    "com.roundeights" %% "s3cala" % "0.1"
-)
-```
+This project is not production ready; use at your own risk.
 
 Example Usage
 -------------
